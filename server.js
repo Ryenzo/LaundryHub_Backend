@@ -12,13 +12,10 @@ connectDB();
 
 const app = express();
 
-// FIXED CORS CONFIGURATION
 app.use(cors({
   origin: [
-    'http://localhost:3000', // Flutter web development
-    'http://localhost:5353', // Alternative Flutter port
-    'https://your-app-name.web.app', // Your Firebase Hosting domain (if deployed)
-    'https://your-app-name.firebaseapp.com' // Your Firebase Auth domain
+    'http://localhost:3000',
+    'http://localhost:5353',
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -26,8 +23,11 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/admin/bookings", adminBookingRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/orders", orderRoutes);
 
 app.get("/", (req, res) => {
   res.send("Laundry API is running...");
@@ -36,9 +36,6 @@ app.get("/", (req, res) => {
 app.get("/api/test", (req, res) => {
   res.send("API test route is working!");
 });
-
-app.use("/api/auth", authRoutes);
-app.use("/api/orders", orderRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
