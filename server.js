@@ -12,7 +12,19 @@ connectDB();
 
 const app = express();
 
-app.use(cors());
+// FIXED CORS CONFIGURATION
+app.use(cors({
+  origin: [
+    'http://localhost:3000', // Flutter web development
+    'http://localhost:5353', // Alternative Flutter port
+    'https://your-app-name.web.app', // Your Firebase Hosting domain (if deployed)
+    'https://your-app-name.firebaseapp.com' // Your Firebase Auth domain
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
+
 app.use(express.json());
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/admin/bookings", adminBookingRoutes);

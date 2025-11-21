@@ -68,3 +68,47 @@ export const loginUser = async (req, res) => {
     res.status(401).json({ message: "Invalid email or password" });
   }
 };
+
+// Sync Firebase user to MongoDB
+export const syncFirebaseUser = async (req, res) => {
+  try {
+    const { firebaseUid, name, email } = req.body;
+
+    // Check if user already exists
+    let user = await User.findOne({ 
+      $or: [
+        { firebaseUid: firebaseUid },
+        { email: email }
+      ]
+    });
+
+    if (!user) {
+      // Create new user linked to Firebase
+      user = new User({
+        firebaseUid,
+        name,
+        email,
+        password: 'firebase-auth', // Dummy password
+        role: 'customer'
+      });
+      await user.save();
+    } else if (!user.firebaseUid) {
+      // Link existing user to Firebase
+      user.firebaseUid = firebaseUid;
+      await user.save();
+    }
+
+    res.json({ 
+      success: true, 
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error("Firebase user sync error:", error);
+    res.status(500).json({ message: "Failed to sync user" });
+  }
+};

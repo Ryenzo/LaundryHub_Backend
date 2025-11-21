@@ -1,15 +1,19 @@
-import Booking from "../models/Booking.js";
-import User from "../models/User.js";
-
-// Create a new booking
+// In controllers/bookingController.js - TEMPORARY
 export const createBooking = async (req, res) => {
   try {
     const { firebaseUid, serviceType, weight, price, pickupDate, deliveryDate, notes } = req.body;
 
-    // Find the MongoDB user linked to Firebase UID
-    const user = await User.findOne({ firebaseUid });
+    // TEMPORARY: Create a user if doesn't exist
+    let user = await User.findOne({ firebaseUid });
     if (!user) {
-      return res.status(404).json({ message: "User not found in database" });
+      user = new User({
+        firebaseUid,
+        name: 'Customer',
+        email: `${firebaseUid}@temp.com`,
+        password: 'temp',
+        role: 'customer'
+      });
+      await user.save();
     }
 
     const booking = new Booking({
@@ -27,21 +31,5 @@ export const createBooking = async (req, res) => {
   } catch (error) {
     console.error("Booking creation error:", error);
     return res.status(500).json({ message: "Failed to create booking" });
-  }
-};
-
-// Get bookings for a user
-export const getBookingsByUser = async (req, res) => {
-  try {
-    const { firebaseUid } = req.params;
-    const user = await User.findOne({ firebaseUid });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const bookings = await Booking.find({ customerId: user._id });
-    res.json(bookings);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to fetch bookings" });
   }
 };
