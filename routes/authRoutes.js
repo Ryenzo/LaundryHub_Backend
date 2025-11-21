@@ -6,6 +6,5 @@ const router = express.Router();
 router.post("/admin/login", adminLogin);
 router.post("/register", registerUser);
 router.post("/login", loginUser);
-router.post("/sync-firebase-user", syncFirebaseUser);
 
 export default router;
