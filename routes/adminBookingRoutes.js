@@ -11,7 +11,7 @@ import { adminMiddleware } from "../middleware/adminMiddleware.js";
 const router = express.Router();
 
 router.get("/", adminMiddleware, getAllBookings);
-router.get("/:id", adminMiddleware, getBookingById);
+router.get("/stats/:id", adminMiddleware, getBookingById);
 router.put("/:id/status", adminMiddleware, updateBookingStatus);
 router.delete("/:id", adminMiddleware, deleteBooking);
 
