@@ -53,7 +53,8 @@ export const registerAdmin = async (req, res) => {
 // USER REGISTRATION
 // ----------------------
 export const registerUser = async (req, res) => {
-  const { name, email, password, phone, firebaseUid, role } = req.body;
+  // UPDATED: Extract firstname and lastname instead of name
+  const { firstname, lastname, email, password, phone, firebaseUid, role } = req.body;
 
   // Ensure role is valid (though model enum handles this, good to be explicit if needed, but we'll rely on model)
   // Prevent "admin" role from being passed if someone tries to bypass
@@ -64,11 +65,22 @@ export const registerUser = async (req, res) => {
   const userExists = await User.findOne({ email });
   if (userExists) return res.status(400).json({ message: "User already exists" });
 
-  const user = await User.create({ name, email, password, phone, firebaseUid, role });
+  // UPDATED: Create user with firstname and lastname
+  const user = await User.create({ 
+    firstname, 
+    lastname, 
+    email, 
+    password, 
+    phone, 
+    firebaseUid, 
+    role 
+  });
+
   if (user) {
     res.status(201).json({
       _id: user._id,
-      name: user.name,
+      firstname: user.firstname, // UPDATED: Return firstname
+      lastname: user.lastname,   // UPDATED: Return lastname
       email: user.email,
       phone: user.phone,
       firebaseUid: user.firebaseUid,
@@ -91,7 +103,8 @@ export const loginUser = async (req, res) => {
   if (user && (await user.matchPassword(password))) {
     res.json({
       _id: user._id,
-      name: user.name,
+      firstname: user.firstname, // UPDATED: Return firstname
+      lastname: user.lastname,   // UPDATED: Return lastname
       email: user.email,
       phone: user.phone,
       role: user.role,
