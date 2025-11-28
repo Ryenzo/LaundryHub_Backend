@@ -93,6 +93,38 @@ export const registerUser = async (req, res) => {
 };
 
 // ----------------------
+// UPDATE USER PROFILE
+// ----------------------
+export const updateUserProfile = async (req, res) => {
+  try {
+    const { firstname, lastname, phone, address } = req.body;
+    // req.user is set by the protect middleware
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    // Update only the fields that are provided
+    if (firstname !== undefined) user.firstname = firstname;
+    if (lastname !== undefined) user.lastname = lastname;
+    if (phone !== undefined) user.phone = phone;
+    if (address !== undefined) user.address = address;
+    const updatedUser = await user.save();
+    res.json({
+      _id: updatedUser._id,
+      firstname: updatedUser.firstname,
+      lastname: updatedUser.lastname,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      address: updatedUser.address,
+      role: updatedUser.role,
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({ message: "Server error while updating profile" });
+  }
+};
+
+// ----------------------
 // USER LOGIN
 // ----------------------
 export const loginUser = async (req, res) => {
@@ -107,6 +139,7 @@ export const loginUser = async (req, res) => {
       lastname: user.lastname,   // UPDATED: Return lastname
       email: user.email,
       phone: user.phone,
+      address: user.address,
       role: user.role,
       token: generateToken(user._id),
     });

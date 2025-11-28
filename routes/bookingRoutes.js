@@ -10,3 +10,4 @@ router.post("/", createBooking);
 router.get("/:firebaseUid", getBookingsByUser);
 
 export default router;
+

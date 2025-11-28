@@ -20,6 +20,8 @@ export const createBooking = async (req, res) => {
       pickupDate,
       deliveryDate,
       notes,
+      phone: req.body.phone || user.phone, // Added phone
+      address: req.body.address || user.address, // Added address
     });
 
     await booking.save();
@@ -42,6 +44,19 @@ export const getBookingsByUser = async (req, res) => {
     const bookings = await Booking.find({ customerId: user._id });
     res.json(bookings);
   } catch (error) {
+    res.status(500).json({ message: "Failed to fetch bookings" });
+  }
+};
+
+// Get all bookings (Admin) - ADDED THIS
+export const getAllBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find()
+      .populate("customerId", "name firstname lastname email phone address")// Populates customer details
+      .sort({ createdAt: -1 });
+    res.json(bookings);
+  } catch (error) {
+    console.error("Error fetching all bookings:", error);
     res.status(500).json({ message: "Failed to fetch bookings" });
   }
 };

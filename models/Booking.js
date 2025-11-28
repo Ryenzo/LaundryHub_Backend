@@ -14,9 +14,18 @@ const bookingSchema = new mongoose.Schema({
   price: Number,
   pickupDate: Date,
   deliveryDate: Date,
+  phone: {
+    type: String,
+    required: true,
+  },
+  address: {
+    type: String,
+    required: true,
+  },
   status: {
     type: String,
-    default: "Pending", // Pending, In Progress, Completed
+    enum: ['pending', 'confirmed', 'processing', 'completed', 'declined'],
+    default: "pending", // lowercase to match frontend
   },
   notes: String,
 }, { timestamps: true });
