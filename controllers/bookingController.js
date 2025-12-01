@@ -64,7 +64,7 @@ export const getBookingsByUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const bookings = await Booking.find({ customerId: user._id })
+    const bookings = await Booking.find({ customerId: user._id, status: 'completed' })
       .populate("shopId", "name address phone")
       .sort({ createdAt: -1 });
     
