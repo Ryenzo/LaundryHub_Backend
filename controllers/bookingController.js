@@ -21,7 +21,7 @@ export const createBooking = async (req, res) => {
 
     // Create booking in shop-specific collection
     const ShopBooking = createShopBookingModel(shop._id.toString());
-    
+
     const booking = new ShopBooking({
       customerId: user._id,
       shopId: shop._id,
@@ -36,7 +36,7 @@ export const createBooking = async (req, res) => {
     });
 
     await booking.save();
-    
+
     // Also save to main bookings collection for user history
     const mainBooking = new Booking({
       ...booking.toObject(),
@@ -44,10 +44,10 @@ export const createBooking = async (req, res) => {
     });
     await mainBooking.save();
 
-    return res.status(201).json({ 
-      success: true, 
+    return res.status(201).json({
+      success: true,
       booking,
-      shopName: shop.name 
+      shopName: shop.name
     });
   } catch (error) {
     console.error("Booking creation error:", error);
@@ -64,10 +64,10 @@ export const getBookingsByUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const bookings = await Booking.find({ customerId: user._id, status: 'completed' })
+    const bookings = await Booking.find({ customerId: user._id })
       .populate("shopId", "name address phone")
       .sort({ createdAt: -1 });
-    
+
     res.json(bookings);
   } catch (error) {
     console.error("Error fetching user bookings:", error);
@@ -79,12 +79,12 @@ export const getBookingsByUser = async (req, res) => {
 export const getBookingsByShop = async (req, res) => {
   try {
     const { shopId } = req.params;
-    
+
     const ShopBooking = createShopBookingModel(shopId);
     const bookings = await ShopBooking.find()
       .populate("customerId", "firstname lastname email phone")
       .sort({ createdAt: -1 });
-    
+
     res.json(bookings);
   } catch (error) {
     console.error("Error fetching shop bookings:", error);
@@ -99,7 +99,7 @@ export const getAllBookings = async (req, res) => {
       .populate("customerId", "firstname lastname email phone")
       .populate("shopId", "name address")
       .sort({ createdAt: -1 });
-    
+
     res.json(bookings);
   } catch (error) {
     console.error("Error fetching all bookings:", error);
@@ -118,7 +118,7 @@ export const getBookingStats = async (req, res) => {
     // Get recent bookings (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
+
     const recentBookings = await Booking.countDocuments({
       createdAt: { $gte: sevenDaysAgo }
     });

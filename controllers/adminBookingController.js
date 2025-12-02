@@ -1,41 +1,154 @@
-import Booking from "../models/Booking.js";
+import Booking, { createShopBookingModel } from "../models/Booking.js";
+import Admin from "../models/Admin.js";
 
-// 1. Get all bookings
+// 1. Get bookings for the admin's specific shop
+export const getMyShopBookings = async (req, res) => {
+  try {
+    // req.adminId is set by adminMiddleware
+    const admin = await Admin.findById(req.adminId).populate("shopId");
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    // Get shop-specific bookings
+    const ShopBooking = createShopBookingModel(admin.shopId._id.toString());
+    const bookings = await ShopBooking.find()
+      .populate("customerId", "firstname lastname email phone")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      shop: {
+        id: admin.shopId._id,
+        name: admin.shopId.name
+      },
+      bookings
+    });
+  } catch (error) {
+    console.error("Error fetching shop bookings:", error);
+    res.status(500).json({ message: "Failed to fetch bookings" });
+  }
+};
+
+// Get all bookings for admin's shop (simpler endpoint for dashboard)
 export const getAllBookings = async (req, res) => {
-  const bookings = await Booking.find()
-    .populate("customerId", "name email"); // uses your field
+  try {
+    // req.adminId is set by adminMiddleware
+    const admin = await Admin.findById(req.adminId).populate("shopId");
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
 
-  res.json(bookings);
+    // Get shop-specific bookings
+    const ShopBooking = createShopBookingModel(admin.shopId._id.toString());
+    const bookings = await ShopBooking.find()
+      .populate("customerId", "firstname lastname email phone address")
+      .sort({ createdAt: -1 });
+
+    // Return just the bookings array (not wrapped in object)
+    res.json(bookings);
+  } catch (error) {
+    console.error("Error fetching all bookings:", error);
+    res.status(500).json({ message: "Failed to fetch bookings" });
+  }
 };
 
-// 2. Get one booking
+// 2. Get filtered bookings by status for admin's shop
+export const getMyShopBookingsByStatus = async (req, res) => {
+  try {
+    const { status } = req.params; // 'pending', 'confirmed', 'processing', 'completed', 'declined'
+
+    const admin = await Admin.findById(req.adminId);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    const ShopBooking = createShopBookingModel(admin.shopId.toString());
+    const bookings = await ShopBooking.find({ status })
+      .populate("customerId", "firstname lastname email phone")
+      .sort({ createdAt: -1 });
+
+    res.json(bookings);
+  } catch (error) {
+    console.error("Error fetching bookings by status:", error);
+    res.status(500).json({ message: "Failed to fetch bookings" });
+  }
+};
+
+// 3. Get one booking (only if it belongs to admin's shop)
 export const getBookingById = async (req, res) => {
-  const booking = await Booking.findById(req.params.id)
-    .populate("customerId", "name email");
+  try {
+    const admin = await Admin.findById(req.adminId);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
 
-  if (!booking) return res.status(404).json({ message: "Booking not found" });
+    const ShopBooking = createShopBookingModel(admin.shopId.toString());
+    const booking = await ShopBooking.findById(req.params.id)
+      .populate("customerId", "firstname lastname email phone");
 
-  res.json(booking);
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    res.json(booking);
+  } catch (error) {
+    console.error("Error fetching booking:", error);
+    res.status(500).json({ message: "Failed to fetch booking" });
+  }
 };
 
-// 3. Update booking status (Pending → In Progress → Completed)
+// 4. Update booking status (only for admin's shop)
 export const updateBookingStatus = async (req, res) => {
-  const { status } = req.body;
+  try {
+    const { status } = req.body;
 
-  const booking = await Booking.findById(req.params.id);
-  if (!booking) return res.status(404).json({ message: "Booking not found" });
+    const admin = await Admin.findById(req.adminId);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
 
-  booking.status = status;
-  await booking.save();
+    // Update in shop-specific collection
+    const ShopBooking = createShopBookingModel(admin.shopId.toString());
+    const booking = await ShopBooking.findById(req.params.id);
 
-  res.json({ message: "Status updated", booking });
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found in your shop" });
+    }
+
+    booking.status = status;
+    await booking.save();
+
+    // Also update in main bookings collection for user history
+    await Booking.findByIdAndUpdate(req.params.id, { status });
+
+    res.json({ message: "Status updated successfully", booking });
+  } catch (error) {
+    console.error("Error updating booking status:", error);
+    res.status(500).json({ message: "Failed to update status" });
+  }
 };
 
-// 4. Delete a booking
+// 5. Delete a booking (only from admin's shop)
 export const deleteBooking = async (req, res) => {
-  const booking = await Booking.findByIdAndDelete(req.params.id);
+  try {
+    const admin = await Admin.findById(req.adminId);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
 
-  if (!booking) return res.status(404).json({ message: "Booking not found" });
+    const ShopBooking = createShopBookingModel(admin.shopId.toString());
+    const booking = await ShopBooking.findByIdAndDelete(req.params.id);
 
-  res.json({ message: "Booking deleted" });
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found in your shop" });
+    }
+
+    // Also delete from main bookings collection
+    await Booking.findByIdAndDelete(req.params.id);
+
+    res.json({ message: "Booking deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting booking:", error);
+    res.status(500).json({ message: "Failed to delete booking" });
+  }
 };

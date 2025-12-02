@@ -8,7 +8,7 @@ import { generateToken } from "../utils/generateToken.js";
 export const adminLogin = async (req, res) => {
   const { email, password } = req.body;
 
-  const admin = await Admin.findOne({ email });
+  const admin = await Admin.findOne({ email }).populate("shopId", "name");
   if (!admin) {
     return res.status(401).json({ message: "Not authorized as admin" });
   }
@@ -19,6 +19,8 @@ export const adminLogin = async (req, res) => {
       name: admin.name,
       email: admin.email,
       role: "admin",
+      shopId: admin.shopId._id,
+      shopName: admin.shopId.name,
       token: generateToken(admin._id),
     });
   } else {
@@ -30,18 +32,32 @@ export const adminLogin = async (req, res) => {
 // ADMIN REGISTRATION
 // ----------------------
 export const registerAdmin = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, shopId } = req.body;
 
   const adminExists = await Admin.findOne({ email });
   if (adminExists) return res.status(400).json({ message: "Admin already exists" });
 
-  const admin = await Admin.create({ name, email, password });
+  // Verify shop exists
+  const Shop = (await import("../models/Shop.js")).default;
+  const shop = await Shop.findById(shopId);
+  if (!shop) return res.status(400).json({ message: "Invalid shop ID" });
+
+  const admin = await Admin.create({
+    name,
+    email,
+    password,
+    shopId,
+    shopName: shop.name
+  });
+
   if (admin) {
     res.status(201).json({
       _id: admin._id,
       name: admin.name,
       email: admin.email,
       role: "admin",
+      shopId: admin.shopId,
+      shopName: admin.shopName,
       token: generateToken(admin._id),
     });
   } else {
@@ -66,14 +82,14 @@ export const registerUser = async (req, res) => {
   if (userExists) return res.status(400).json({ message: "User already exists" });
 
   // UPDATED: Create user with firstname and lastname
-  const user = await User.create({ 
-    firstname, 
-    lastname, 
-    email, 
-    password, 
-    phone, 
-    firebaseUid, 
-    role 
+  const user = await User.create({
+    firstname,
+    lastname,
+    email,
+    password,
+    phone,
+    firebaseUid,
+    role
   });
 
   if (user) {
