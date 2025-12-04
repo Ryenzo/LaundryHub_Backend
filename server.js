@@ -12,6 +12,7 @@ import adminBookingRoutes from "./routes/adminBookingRoutes.js";
 
 // NEW: Chatbot route
 import chatbotRoutes from "./routes/chatbotRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -31,6 +32,7 @@ app.use("/api/admin/bookings", adminBookingRoutes);
 
 // NEW: Chatbot API
 app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Test routes
 app.get("/", (req, res) => {

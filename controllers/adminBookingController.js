@@ -1,5 +1,6 @@
 import Booking, { createShopBookingModel } from "../models/Booking.js";
 import Admin from "../models/Admin.js";
+import Notification from "../models/Notification.js";
 
 // 1. Get bookings for the admin's specific shop
 export const getMyShopBookings = async (req, res) => {
@@ -120,6 +121,18 @@ export const updateBookingStatus = async (req, res) => {
 
     // Also update in main bookings collection for user history
     await Booking.findByIdAndUpdate(req.params.id, { status });
+
+    // Create notification for the user
+    const notificationMessage = `Your booking #${booking._id.toString().slice(-6)} status has been updated to ${status}.`;
+
+    await Notification.create({
+      userId: booking.customerId,
+      shopId: admin.shopId,
+      bookingId: booking._id,
+      title: "Booking Status Update",
+      message: notificationMessage,
+      type: "status_update"
+    });
 
     res.json({ message: "Status updated successfully", booking });
   } catch (error) {
