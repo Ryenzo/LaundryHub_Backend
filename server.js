@@ -1,7 +1,10 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import connectDB from "./config/db.js";
+import { initializeSocket, handleConnection } from "./utils/socketManager.js";
 
 // Existing LaundryHub routes
 import authRoutes from "./routes/authRoutes.js";
@@ -18,6 +21,21 @@ dotenv.config();
 connectDB();
 
 const app = express();
+const httpServer = createServer(app);
+
+// Initialize Socket.io
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*", // Allow all origins for development (restrict in production)
+    methods: ["GET", "POST", "PUT", "DELETE"]
+  }
+});
+
+// Initialize socket manager
+initializeSocket(io);
+
+// Handle Socket.io connections
+io.on("connection", handleConnection);
 
 // Middleware
 app.use(cors());
@@ -48,6 +66,8 @@ app.use("/api/orders", orderRoutes);
 
 // Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
-);
+httpServer.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🔌 Socket.io server ready on port ${PORT}`);
+});
+

@@ -1,6 +1,8 @@
 import Booking, { createShopBookingModel } from "../models/Booking.js";
 import Admin from "../models/Admin.js";
 import Notification from "../models/Notification.js";
+import User from "../models/User.js";
+import { emitToUser, emitToShop } from "../utils/socketManager.js";
 
 // 1. Get bookings for the admin's specific shop
 export const getMyShopBookings = async (req, res) => {
@@ -133,6 +135,23 @@ export const updateBookingStatus = async (req, res) => {
       message: notificationMessage,
       type: "status_update"
     });
+
+    // ✅ REAL-TIME UPDATE: Emit status change via WebSocket
+    // Get user to send their firebaseUid
+    const user = await User.findById(booking.customerId);
+    if (user) {
+      const statusUpdateData = {
+        bookingId: booking._id,
+        status: status,
+        booking: booking.toObject()
+      };
+
+      // Notify the user who owns this booking
+      emitToUser(user.firebaseUid, 'booking_status_updated', statusUpdateData);
+
+      // Also notify other admins in the same shop
+      emitToShop(admin.shopId.toString(), 'booking_status_updated', statusUpdateData);
+    }
 
     res.json({ message: "Status updated successfully", booking });
   } catch (error) {

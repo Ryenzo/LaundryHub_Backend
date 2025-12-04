@@ -1,6 +1,7 @@
 import Booking, { createShopBookingModel } from "../models/Booking.js";
 import User from "../models/User.js";
 import Shop from "../models/Shop.js";
+import { emitToUser, emitToShop } from "../utils/socketManager.js";
 
 // Create a new booking in shop-specific collection
 export const createBooking = async (req, res) => {
@@ -43,6 +44,20 @@ export const createBooking = async (req, res) => {
       _id: booking._id // Keep same ID for reference
     });
     await mainBooking.save();
+
+    // ✅ REAL-TIME UPDATE: Emit events via WebSocket
+    const bookingData = {
+      ...booking.toObject(),
+      shopName: shop.name,
+      customerName: `${user.firstname} ${user.lastname}`,
+      customerEmail: user.email
+    };
+
+    // Notify the user who created the booking
+    emitToUser(firebaseUid, 'booking_created', bookingData);
+
+    // Notify admins of this specific shop about the new booking
+    emitToShop(shop._id.toString(), 'new_booking', bookingData);
 
     return res.status(201).json({
       success: true,
